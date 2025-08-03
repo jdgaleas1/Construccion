@@ -13,9 +13,24 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView>
     with AutomaticKeepAliveClientMixin {
   final HomeController _homeController = HomeController();
-  List<Map<String, dynamic>> _productos = [];
+  final TextEditingController _busquedaController = TextEditingController();
+
+  List<Map<String, dynamic>> _todosLosProductos = [];
+  List<Map<String, dynamic>> _productosFiltrados = [];
   bool _cargando = true;
   String? _errorMessage;
+  String _categoriaSeleccionada = 'todas';
+
+  // Categorías disponibles
+  final List<String> _categorias = [
+    'todas',
+    'comida',
+    'ropa',
+    'artesania',
+    'tecnologia',
+    'servicios',
+    'otros',
+  ];
 
   // Mantener el estado cuando cambia de pestañas
   @override
@@ -25,6 +40,13 @@ class _HomeViewState extends State<HomeView>
   void initState() {
     super.initState();
     _cargarProductosSafely();
+    _busquedaController.addListener(_aplicarFiltros);
+  }
+
+  @override
+  void dispose() {
+    _busquedaController.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarProductosSafely() async {
@@ -40,7 +62,8 @@ class _HomeViewState extends State<HomeView>
 
       if (mounted) {
         setState(() {
-          _productos = productos;
+          _todosLosProductos = productos;
+          _productosFiltrados = productos;
           _cargando = false;
         });
       }
@@ -49,12 +72,40 @@ class _HomeViewState extends State<HomeView>
 
       if (mounted) {
         setState(() {
-          _productos = [];
+          _todosLosProductos = [];
+          _productosFiltrados = [];
           _cargando = false;
           _errorMessage = 'Error al cargar productos. Toca para reintentar.';
         });
       }
     }
+  }
+
+  void _aplicarFiltros() {
+    if (!mounted) return;
+
+    setState(() {
+      _productosFiltrados = _homeController.aplicarFiltros(
+        _todosLosProductos,
+        _busquedaController.text,
+        _categoriaSeleccionada,
+      );
+    });
+  }
+
+  void _cambiarCategoria(String categoria) {
+    setState(() {
+      _categoriaSeleccionada = categoria;
+    });
+    _aplicarFiltros();
+  }
+
+  void _limpiarBusqueda() {
+    _busquedaController.clear();
+    setState(() {
+      _categoriaSeleccionada = 'todas';
+    });
+    _aplicarFiltros();
   }
 
   void _mostrarDetalleProducto(
@@ -139,6 +190,10 @@ class _HomeViewState extends State<HomeView>
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      'Categoría: ${emprendimiento.categoria.toUpperCase()}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    Text(
                       'Ubicación: ${emprendimiento.ubicacion}',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
@@ -205,34 +260,123 @@ class _HomeViewState extends State<HomeView>
   }
 
   Widget _buildEmptyWidget() {
+    final bool hayBusqueda =
+        _busquedaController.text.isNotEmpty ||
+        _categoriaSeleccionada != 'todas';
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.inventory, size: 80, color: Colors.grey),
+          Icon(
+            hayBusqueda ? Icons.search_off : Icons.inventory,
+            size: 80,
+            color: Colors.grey,
+          ),
           const SizedBox(height: 20),
-          const Text(
-            'No hay productos disponibles',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+          Text(
+            hayBusqueda
+                ? 'No se encontraron productos'
+                : 'No hay productos disponibles',
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Los emprendedores pueden agregar productos desde la pestaña "Productos"',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+          Text(
+            hayBusqueda
+                ? 'Intenta con otros términos de búsqueda'
+                : 'Los emprendedores pueden agregar productos desde la pestaña "Productos"',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _cargarProductosSafely,
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text(
-              'Actualizar',
-              style: TextStyle(color: Colors.white),
+          if (hayBusqueda)
+            ElevatedButton.icon(
+              onPressed: _limpiarBusqueda,
+              icon: const Icon(Icons.clear, color: Colors.white),
+              label: const Text(
+                'Limpiar filtros',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _cargarProductosSafely,
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text(
+                'Actualizar',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
             ),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFiltros() {
+    return Column(
+      children: [
+        // Barra de búsqueda
+        TextField(
+          controller: _busquedaController,
+          decoration: InputDecoration(
+            hintText: 'Buscar productos o emprendimientos...',
+            prefixIcon: const Icon(Icons.search, color: Colors.redAccent),
+            suffixIcon: _busquedaController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _busquedaController.clear(),
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.redAccent),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 15),
+
+        // Filtros de categoría
+        SizedBox(
+          height: 40,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _categorias.length,
+            itemBuilder: (context, index) {
+              final categoria = _categorias[index];
+              final isSelected = categoria == _categoriaSeleccionada;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(
+                    categoria == 'todas' ? 'Todas' : categoria.toUpperCase(),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.redAccent,
+                      fontSize: 12,
+                    ),
+                  ),
+                  selected: isSelected,
+                  onSelected: (selected) => _cambiarCategoria(categoria),
+                  selectedColor: Colors.redAccent,
+                  checkmarkColor: Colors.white,
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -265,13 +409,31 @@ class _HomeViewState extends State<HomeView>
 
             const SizedBox(height: 20),
 
+            // Filtros de búsqueda
+            _buildFiltros(),
+
+            const SizedBox(height: 20),
+
+            // Contador de resultados
+            if (!_cargando && _errorMessage == null)
+              Text(
+                '${_productosFiltrados.length} producto(s) encontrado(s)',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
             // Contenido principal
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _errorMessage != null
                   ? _buildErrorWidget()
-                  : _productos.isEmpty
+                  : _productosFiltrados.isEmpty
                   ? _buildEmptyWidget()
                   : GridView.builder(
                       gridDelegate:
@@ -281,10 +443,10 @@ class _HomeViewState extends State<HomeView>
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
-                      itemCount: _productos.length,
+                      itemCount: _productosFiltrados.length,
                       itemBuilder: (context, index) {
                         try {
-                          final item = _productos[index];
+                          final item = _productosFiltrados[index];
                           final producto = item['producto'] as ProductoModel;
                           final emprendimiento =
                               item['emprendimiento'] as EmprendimientoModel;
@@ -358,7 +520,7 @@ class _HomeViewState extends State<HomeView>
 
                                           const Spacer(),
 
-                                          // Nombre del emprendimiento
+                                          // Nombre del emprendimiento y categoría
                                           Text(
                                             emprendimiento.nombre.isNotEmpty
                                                 ? emprendimiento.nombre
@@ -369,6 +531,15 @@ class _HomeViewState extends State<HomeView>
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            emprendimiento.categoria
+                                                .toUpperCase(),
+                                            style: const TextStyle(
+                                              fontSize: 9,
+                                              color: Colors.redAccent,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ],
                                       ),
