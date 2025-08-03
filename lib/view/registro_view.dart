@@ -23,34 +23,6 @@ class _RegistroViewState extends State<RegistroView> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-  // Función para validar teléfono ecuatoriano
-  String? _validarTelefono(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Ingresa tu número de teléfono';
-    }
-
-    // Remover espacios y caracteres especiales
-    String telefono = value.replaceAll(RegExp(r'[^\d]'), '');
-
-    // Validar formato ecuatoriano
-    if (telefono.length == 10) {
-      // Celular: debe empezar con 09
-      if (telefono.startsWith('09')) {
-        return null; // Válido
-      }
-      // Convencional: debe empezar con 0 seguido del código de área
-      List<String> codigosArea = ['02', '03', '04', '05', '06', '07'];
-      for (String codigo in codigosArea) {
-        if (telefono.startsWith(codigo)) {
-          return null; // Válido
-        }
-      }
-    }
-
-    return 'Ingresa un número ecuatoriano válido (10 dígitos)';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,15 +99,14 @@ class _RegistroViewState extends State<RegistroView> {
                 controller: _telefonoController,
                 decoration: const InputDecoration(
                   labelText: 'Teléfono',
-                  hintText: 'Ej: 0987654321',
+                  hintText: 'Ej: 987654321',
                   prefixText: '+593 ',
                 ),
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
+                  LengthLimitingTextInputFormatter(9),
                 ],
-                validator: _validarTelefono,
               ),
 
               TextFormField(

@@ -1,4 +1,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<!-- Permisos para abrir URLs externas -->
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+<!-- Queries para URL Launcher -->
+<queries>
+  <!-- Para WhatsApp -->
+  <intent>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="https" />
+  </intent>
+  <intent>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="http" />
+  </intent>
+  <!-- Para protocolo WhatsApp -->
+  <intent>
+    <action android:name="android.intent.action.VIEW" />
+    <data android:scheme="whatsapp" />
+  </intent>
+</queries>
     <application
         android:label="lata_emprende"
         android:name="${applicationName}"

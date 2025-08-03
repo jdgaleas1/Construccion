@@ -299,4 +299,33 @@ class FirestoreService {
       return [];
     }
   }
+
+  /// Obtener teléfono del usuario emprendedor por ID de emprendimiento
+  Future<String?> obtenerTelefonoEmprendedor(String idEmprendimiento) async {
+    try {
+      // Obtener el emprendimiento
+      final emprendimientoDoc = await _db
+          .collection('emprendimientos')
+          .doc(idEmprendimiento)
+          .get();
+
+      if (emprendimientoDoc.exists) {
+        final idUsuario = emprendimientoDoc.data()!['id_usuario'];
+
+        // Obtener el usuario propietario
+        final usuarioDoc = await _db
+            .collection('usuarios')
+            .doc(idUsuario)
+            .get();
+
+        if (usuarioDoc.exists) {
+          return usuarioDoc.data()!['telefono'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error al obtener teléfono del emprendedor: $e');
+      return null;
+    }
+  }
 }

@@ -76,4 +76,16 @@ class HomeController {
 
     return resultado;
   }
+
+  /// Obtener teléfono del emprendedor
+  Future<String?> obtenerTelefonoEmprendedor(String idEmprendimiento) async {
+    try {
+      return await _firestoreService.obtenerTelefonoEmprendedor(
+        idEmprendimiento,
+      );
+    } catch (e) {
+      print('Error en HomeController.obtenerTelefonoEmprendedor: $e');
+      return null;
+    }
+  }
 }

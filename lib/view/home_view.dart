@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lata_emprende/controller/home_controller.dart';
 import 'package:lata_emprende/models/emprendimiento_model.dart';
 import 'package:lata_emprende/models/producto_model.dart';
+import 'package:lata_emprende/services/whatsapp_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -206,24 +207,23 @@ class _HomeViewState extends State<HomeView>
         actions: [
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                // Funcionalidad de contactar (próximamente)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Contactar a ${emprendimiento.nombre}'),
-                    backgroundColor: Colors.green,
-                  ),
+                _contactarPorWhatsApp(
+                  emprendimiento.idEmprendimiento,
+                  emprendimiento.nombre,
+                  producto.nombre,
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text(
-                'Contactar',
+              icon: const Icon(Icons.chat, color: Colors.white),
+              label: const Text(
+                'Contactar por WhatsApp',
                 style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
@@ -484,7 +484,7 @@ class _HomeViewState extends State<HomeView>
                                     ),
                                   ),
 
-                                  // Info del producto
+                                  // Info del producto - CORREGIDO
                                   Expanded(
                                     flex: 2,
                                     child: Padding(
@@ -492,6 +492,8 @@ class _HomeViewState extends State<HomeView>
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
+                                        mainAxisSize:
+                                            MainAxisSize.min, // AGREGADO
                                         children: [
                                           // Nombre del producto
                                           Text(
@@ -500,43 +502,48 @@ class _HomeViewState extends State<HomeView>
                                                 : 'Sin nombre',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 13,
+                                              fontSize:
+                                                  12, // REDUCIDO de 13 a 12
                                             ),
-                                            maxLines: 2,
+                                            maxLines: 1, // CAMBIADO de 2 a 1
                                             overflow: TextOverflow.ellipsis,
                                           ),
 
-                                          const SizedBox(height: 4),
-
+                                          const SizedBox(
+                                            height: 2,
+                                          ), // REDUCIDO de 4 a 2
                                           // Precio
                                           Text(
                                             '\$${producto.precio.toStringAsFixed(2)}',
                                             style: const TextStyle(
                                               color: Colors.redAccent,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                              fontSize:
+                                                  14, // REDUCIDO de 16 a 14
                                             ),
                                           ),
 
                                           const Spacer(),
 
-                                          // Nombre del emprendimiento y categoría
+                                          // Nombre del emprendimiento
                                           Text(
                                             emprendimiento.nombre.isNotEmpty
                                                 ? emprendimiento.nombre
                                                 : 'Sin nombre',
                                             style: const TextStyle(
-                                              fontSize: 10,
+                                              fontSize: 9, // REDUCIDO de 10 a 9
                                               color: Colors.grey,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
+
+                                          // Categoría
                                           Text(
                                             emprendimiento.categoria
                                                 .toUpperCase(),
                                             style: const TextStyle(
-                                              fontSize: 9,
+                                              fontSize: 8, // REDUCIDO de 9 a 8
                                               color: Colors.redAccent,
                                               fontWeight: FontWeight.w500,
                                             ),
@@ -569,5 +576,62 @@ class _HomeViewState extends State<HomeView>
         ),
       ),
     );
+  }
+
+  Future<void> _contactarPorWhatsApp(
+    String idEmprendimiento,
+    String nombreEmprendimiento,
+    String nombreProducto,
+  ) async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Obtener teléfono del emprendedor
+      final telefono = await _homeController.obtenerTelefonoEmprendedor(
+        idEmprendimiento,
+      );
+
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+
+      if (telefono == null || telefono.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Este emprendimiento no tiene número de WhatsApp registrado.',
+              ),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Contactar por WhatsApp
+      await WhatsAppService.contactarEmprendedor(
+        numeroTelefono: telefono,
+        nombreEmprendimiento: nombreEmprendimiento,
+        nombreProducto: nombreProducto,
+        context: context,
+      );
+    } catch (e) {
+      // Cerrar loading si está abierto
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al contactar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

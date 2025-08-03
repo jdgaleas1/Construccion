@@ -30,7 +30,8 @@ class EmprendimientoController {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
         );
       }
 
@@ -60,10 +61,7 @@ class EmprendimientoController {
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -75,7 +73,9 @@ class EmprendimientoController {
       final usuario = AuthController.usuarioActual;
       if (usuario == null) return null;
 
-      return await _firestoreService.obtenerEmprendimientoPorUsuario(usuario.idUsuario);
+      return await _firestoreService.obtenerEmprendimientoPorUsuario(
+        usuario.idUsuario,
+      );
     } catch (e) {
       print('Error al obtener emprendimiento: $e');
       return null;
@@ -96,7 +96,8 @@ class EmprendimientoController {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
         );
       }
 
@@ -125,19 +126,20 @@ class EmprendimientoController {
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   /// Obtener productos del emprendimiento
-  Future<List<ProductoModel>> obtenerMisProductos(String idEmprendimiento) async {
+  Future<List<ProductoModel>> obtenerMisProductos(
+    String idEmprendimiento,
+  ) async {
     try {
-      return await _firestoreService.obtenerProductosPorEmprendimiento(idEmprendimiento);
+      return await _firestoreService.obtenerProductosPorEmprendimiento(
+        idEmprendimiento,
+      );
     } catch (e) {
       print('Error al obtener productos: $e');
       return [];
@@ -151,7 +153,7 @@ class EmprendimientoController {
   }) async {
     try {
       await _firestoreService.eliminarProducto(idProducto);
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
