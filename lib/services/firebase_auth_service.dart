@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lata_emprende/models/emprendimiento_model.dart';
+import 'package:lata_emprende/models/producto_model.dart';
 import 'package:lata_emprende/models/usuario_model.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -152,6 +154,149 @@ class FirestoreService {
     } catch (e) {
       print('Error al actualizar usuario: $e');
       throw Exception('Error al actualizar usuario: $e');
+    }
+  }
+
+  // ====== MÉTODOS PARA EMPRENDIMIENTOS ======
+
+  /// Crear emprendimiento
+  Future<String> crearEmprendimiento({
+    required String nombre,
+    required String descripcion,
+    required String ubicacion,
+    required String categoria,
+    required String idUsuario,
+    String logo = '',
+  }) async {
+    try {
+      final emprendimientoData = {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'ubicacion': ubicacion,
+        'logo': logo,
+        'categoria': categoria,
+        'id_usuario': idUsuario,
+        'fecha_creacion': DateTime.now().toIso8601String(),
+      };
+
+      final docRef = await _db
+          .collection('emprendimientos')
+          .add(emprendimientoData);
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Error al crear emprendimiento: $e');
+    }
+  }
+
+  /// Obtener emprendimiento por ID de usuario
+  Future<EmprendimientoModel?> obtenerEmprendimientoPorUsuario(
+    String idUsuario,
+  ) async {
+    try {
+      final query = await _db
+          .collection('emprendimientos')
+          .where('id_usuario', isEqualTo: idUsuario)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        return EmprendimientoModel.fromJson(doc.data(), doc.id);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error al obtener emprendimiento: $e');
+    }
+  }
+
+  // ====== MÉTODOS PARA PRODUCTOS ======
+
+  /// Crear producto
+  Future<String> crearProducto({
+    required String nombre,
+    required String descripcion,
+    required double precio,
+    required String idEmprendimiento,
+    String imagen = '',
+  }) async {
+    try {
+      final productoData = {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'precio': precio,
+        'imagen': imagen,
+        'id_emprendimiento': idEmprendimiento,
+        'fecha_creacion': DateTime.now().toIso8601String(),
+      };
+
+      final docRef = await _db.collection('productos').add(productoData);
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Error al crear producto: $e');
+    }
+  }
+
+  /// Obtener productos por emprendimiento
+  Future<List<ProductoModel>> obtenerProductosPorEmprendimiento(
+    String idEmprendimiento,
+  ) async {
+    try {
+      final query = await _db
+          .collection('productos')
+          .where('id_emprendimiento', isEqualTo: idEmprendimiento)
+          .get();
+
+      return query.docs
+          .map((doc) => ProductoModel.fromJson(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Error al obtener productos: $e');
+    }
+  }
+
+  /// Eliminar producto
+  Future<void> eliminarProducto(String idProducto) async {
+    try {
+      await _db.collection('productos').doc(idProducto).delete();
+    } catch (e) {
+      throw Exception('Error al eliminar producto: $e');
+    }
+  }
+
+  /// Obtener todos los productos (para vista home)
+  Future<List<Map<String, dynamic>>> obtenerTodosLosProductos() async {
+    try {
+      // Obtener todos los productos
+      final productosQuery = await _db.collection('productos').get();
+
+      List<Map<String, dynamic>> productosConEmprendimiento = [];
+
+      for (var productoDoc in productosQuery.docs) {
+        final productoData = productoDoc.data();
+        final producto = ProductoModel.fromJson(productoData, productoDoc.id);
+
+        // Obtener datos del emprendimiento
+        final emprendimientoDoc = await _db
+            .collection('emprendimientos')
+            .doc(producto.idEmprendimiento)
+            .get();
+
+        if (emprendimientoDoc.exists) {
+          final emprendimiento = EmprendimientoModel.fromJson(
+            emprendimientoDoc.data()!,
+            emprendimientoDoc.id,
+          );
+
+          productosConEmprendimiento.add({
+            'producto': producto,
+            'emprendimiento': emprendimiento,
+          });
+        }
+      }
+
+      return productosConEmprendimiento;
+    } catch (e) {
+      print('Error al obtener todos los productos: $e');
+      return [];
     }
   }
 }

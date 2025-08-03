@@ -4,6 +4,7 @@ import 'package:lata_emprende/view/login_view.dart';
 import 'package:lata_emprende/view/registro_view.dart';
 import 'package:lata_emprende/view/perfil_view.dart';
 import 'package:lata_emprende/view/home_view.dart';
+import 'package:lata_emprende/view/productos_view.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -48,10 +49,18 @@ class _MainNavigationViewState extends State<MainNavigationView> {
   int _currentIndex = 0;
 
   // Lista de widgets para cada página
-  final List<Widget> _pages = [const HomeView(), const PerfilView()];
+  final List<Widget> _pages = [
+    const HomeView(),
+    const ProductosView(),
+    const PerfilView(),
+  ];
 
   // Títulos para cada página
-  final List<String> _titles = ['Latacunga Emprende', 'Mi Perfil'];
+  final List<String> _titles = [
+    'Latacunga Emprende',
+    'Mis Productos',
+    'Mi Perfil',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +87,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         elevation: 8,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory),
+            label: 'Productos',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
