@@ -4,6 +4,7 @@ import 'package:lata_emprende/models/producto_model.dart';
 import 'package:lata_emprende/models/usuario_model.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:lata_emprende/models/valoracion_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -326,6 +327,70 @@ class FirestoreService {
     } catch (e) {
       print('Error al obtener teléfono del emprendedor: $e');
       return null;
+    }
+  }
+  // ====== MÉTODOS PARA VALORACIONES ======
+
+  /// Crear valoración
+  Future<String> crearValoracion({
+    required String comentario,
+    required int puntaje,
+    required String idEmprendimiento,
+    required String autorCorreo,
+  }) async {
+    try {
+      final valoracionData = {
+        'comentario': comentario,
+        'puntaje': puntaje,
+        'fecha': DateTime.now().toIso8601String(),
+        'id_emprendimiento': idEmprendimiento,
+        'autor_correo': autorCorreo,
+      };
+
+      final docRef = await _db.collection('valoraciones').add(valoracionData);
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Error al crear valoración: $e');
+    }
+  }
+
+  /// Obtener valoraciones por emprendimiento (SIN orderBy para evitar índices)
+  Future<List<ValoracionModel>> obtenerValoracionesPorEmprendimiento(
+    String idEmprendimiento,
+  ) async {
+    try {
+      final query = await _db
+          .collection('valoraciones')
+          .where('id_emprendimiento', isEqualTo: idEmprendimiento)
+          .get(); // Removemos el orderBy
+
+      // Ordenamos en el cliente en lugar de en Firestore
+      final valoraciones = query.docs
+          .map((doc) => ValoracionModel.fromJson(doc.data(), doc.id))
+          .toList();
+
+      // Ordenar por fecha (más recientes primero)
+      valoraciones.sort((a, b) => b.fecha.compareTo(a.fecha));
+
+      return valoraciones;
+    } catch (e) {
+      throw Exception('Error al obtener valoraciones: $e');
+    }
+  }
+
+  /// Calcular promedio de valoraciones
+  Future<double> obtenerPromedioValoraciones(String idEmprendimiento) async {
+    try {
+      final valoraciones = await obtenerValoracionesPorEmprendimiento(
+        idEmprendimiento,
+      );
+
+      if (valoraciones.isEmpty) return 0.0;
+
+      final suma = valoraciones.fold<int>(0, (sum, val) => sum + val.puntaje);
+      return suma / valoraciones.length;
+    } catch (e) {
+      return 0.0;
     }
   }
 }

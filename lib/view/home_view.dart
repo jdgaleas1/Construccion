@@ -3,6 +3,9 @@ import 'package:lata_emprende/controller/home_controller.dart';
 import 'package:lata_emprende/models/emprendimiento_model.dart';
 import 'package:lata_emprende/models/producto_model.dart';
 import 'package:lata_emprende/services/whatsapp_service.dart';
+import 'package:lata_emprende/controller/valoracion_controller.dart';
+import 'package:lata_emprende/models/valoracion_model.dart';
+import 'package:lata_emprende/view/agregar_valoracion_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -59,7 +62,9 @@ class _HomeViewState extends State<HomeView>
     });
 
     try {
-      final productos = await _homeController.obtenerTodosLosProductos();
+      // Usar el nuevo método que incluye valoraciones
+      final productos = await _homeController
+          .obtenerTodosLosProductosConValoraciones();
 
       if (mounted) {
         setState(() {
@@ -115,88 +120,203 @@ class _HomeViewState extends State<HomeView>
   ) {
     if (!mounted) return;
 
+    // Buscar las valoraciones precargadas
+    final item = _productosFiltrados.firstWhere(
+      (item) =>
+          (item['producto'] as ProductoModel).idProducto == producto.idProducto,
+      orElse: () => {},
+    );
+
+    final valoraciones = item['valoraciones'] as List<ValoracionModel>? ?? [];
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Imagen del producto
+              // Header del dialog
               Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(8),
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
                 ),
-                child: const Icon(Icons.image, size: 60, color: Colors.grey),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        producto.nombre,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 16),
+              // Contenido expandible
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Imagen del producto
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                      ),
 
-              // Precio destacado
-              Center(
-                child: Text(
-                  '\$${producto.precio.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.redAccent,
+                      const SizedBox(height: 16),
+
+                      // Precio destacado
+                      Center(
+                        child: Text(
+                          '\$${producto.precio.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Descripción del producto
+                      const Text(
+                        'Descripción',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        producto.descripcion.isNotEmpty
+                            ? producto.descripcion
+                            : 'Sin descripción disponible',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Info del emprendimiento
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Emprendimiento:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              emprendimiento.nombre,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Categoría: ${emprendimiento.categoria.toUpperCase()}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'Ubicación: ${emprendimiento.ubicacion}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Sección de valoraciones (usando valoraciones precargadas)
+                      _buildSeccionValoracionesPrecargadas(valoraciones),
+                    ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Título descripción
-              const Text(
-                'Descripción',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Descripción del producto
-              Text(
-                producto.descripcion.isNotEmpty
-                    ? producto.descripcion
-                    : 'Sin descripción disponible',
-                style: const TextStyle(fontSize: 14),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Info del emprendimiento
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              // Botones de acción
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Emprendimiento:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _contactarPorWhatsApp(
+                            emprendimiento.idEmprendimiento,
+                            emprendimiento.nombre,
+                            producto.nombre,
+                          );
+                        },
+                        icon: const Icon(Icons.chat, color: Colors.white),
+                        label: const Text(
+                          'Contactar por WhatsApp',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
-                    Text(
-                      emprendimiento.nombre,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Categoría: ${emprendimiento.categoria.toUpperCase()}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    Text(
-                      'Ubicación: ${emprendimiento.ubicacion}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _mostrarAgregarValoracion(emprendimiento);
+                        },
+                        icon: const Icon(
+                          Icons.star_border,
+                          color: Colors.redAccent,
+                        ),
+                        label: const Text(
+                          'Valorar Emprendimiento',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -204,30 +324,6 @@ class _HomeViewState extends State<HomeView>
             ],
           ),
         ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _contactarPorWhatsApp(
-                  emprendimiento.idEmprendimiento,
-                  emprendimiento.nombre,
-                  producto.nombre,
-                );
-              },
-              icon: const Icon(Icons.chat, color: Colors.white),
-              label: const Text(
-                'Contactar por WhatsApp',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -439,7 +535,8 @@ class _HomeViewState extends State<HomeView>
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 0.8,
+                            childAspectRatio:
+                                0.75, // Ajustar para dar más espacio
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
@@ -450,6 +547,12 @@ class _HomeViewState extends State<HomeView>
                           final producto = item['producto'] as ProductoModel;
                           final emprendimiento =
                               item['emprendimiento'] as EmprendimientoModel;
+
+                          // Obtener datos de valoración
+                          final promedioValoracion =
+                              item['promedio_valoracion'] as double? ?? 0.0;
+                          final totalValoraciones =
+                              item['total_valoraciones'] as int? ?? 0;
 
                           return GestureDetector(
                             onTap: () => _mostrarDetalleProducto(
@@ -484,7 +587,7 @@ class _HomeViewState extends State<HomeView>
                                     ),
                                   ),
 
-                                  // Info del producto - CORREGIDO
+                                  // Info del producto
                                   Expanded(
                                     flex: 2,
                                     child: Padding(
@@ -492,8 +595,7 @@ class _HomeViewState extends State<HomeView>
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
-                                        mainAxisSize:
-                                            MainAxisSize.min, // AGREGADO
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           // Nombre del producto
                                           Text(
@@ -502,26 +604,62 @@ class _HomeViewState extends State<HomeView>
                                                 : 'Sin nombre',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize:
-                                                  12, // REDUCIDO de 13 a 12
+                                              fontSize: 12,
                                             ),
-                                            maxLines: 1, // CAMBIADO de 2 a 1
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
 
-                                          const SizedBox(
-                                            height: 2,
-                                          ), // REDUCIDO de 4 a 2
+                                          const SizedBox(height: 2),
+
                                           // Precio
                                           Text(
                                             '\$${producto.precio.toStringAsFixed(2)}',
                                             style: const TextStyle(
                                               color: Colors.redAccent,
                                               fontWeight: FontWeight.bold,
-                                              fontSize:
-                                                  14, // REDUCIDO de 16 a 14
+                                              fontSize: 14,
                                             ),
                                           ),
+
+                                          const SizedBox(height: 4),
+
+                                          // ⭐ NUEVO: Estrellas de valoración
+                                          if (totalValoraciones > 0)
+                                            Row(
+                                              children: [
+                                                ...List.generate(5, (
+                                                  starIndex,
+                                                ) {
+                                                  return Icon(
+                                                    Icons.star,
+                                                    size: 12,
+                                                    color:
+                                                        starIndex <
+                                                            promedioValoracion
+                                                                .round()
+                                                        ? Colors.amber
+                                                        : Colors.grey.shade300,
+                                                  );
+                                                }),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '(${totalValoraciones})',
+                                                  style: const TextStyle(
+                                                    fontSize: 9,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          else
+                                            Text(
+                                              'Sin valoraciones',
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.grey.shade500,
+                                              ),
+                                            ),
 
                                           const Spacer(),
 
@@ -531,7 +669,7 @@ class _HomeViewState extends State<HomeView>
                                                 ? emprendimiento.nombre
                                                 : 'Sin nombre',
                                             style: const TextStyle(
-                                              fontSize: 9, // REDUCIDO de 10 a 9
+                                              fontSize: 9,
                                               color: Colors.grey,
                                             ),
                                             maxLines: 1,
@@ -543,7 +681,7 @@ class _HomeViewState extends State<HomeView>
                                             emprendimiento.categoria
                                                 .toUpperCase(),
                                             style: const TextStyle(
-                                              fontSize: 8, // REDUCIDO de 9 a 8
+                                              fontSize: 8,
                                               color: Colors.redAccent,
                                               fontWeight: FontWeight.w500,
                                             ),
@@ -633,5 +771,272 @@ class _HomeViewState extends State<HomeView>
         );
       }
     }
+  }
+
+  Widget _buildSeccionValoraciones(String idEmprendimiento) {
+    return FutureBuilder<List<ValoracionModel>>(
+      future: ValoracionController().obtenerValoraciones(idEmprendimiento),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final valoraciones = snapshot.data ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Valoraciones',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                if (valoraciones.isNotEmpty)
+                  _buildPromedioEstrellas(valoraciones),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            if (valoraciones.isEmpty)
+              const Text(
+                'Sin valoraciones aún',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              )
+            else
+              ...valoraciones
+                  .take(3)
+                  .map((valoracion) => _buildValoracionCard(valoracion)),
+
+            if (valoraciones.length > 3)
+              TextButton(
+                onPressed: () => _mostrarTodasLasValoraciones(
+                  idEmprendimiento,
+                  valoraciones,
+                ),
+                child: Text('Ver todas (${valoraciones.length})'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPromedioEstrellas(List<ValoracionModel> valoraciones) {
+    final promedio =
+        valoraciones.fold<double>(0, (sum, val) => sum + val.puntaje) /
+        valoraciones.length;
+
+    return Row(
+      children: [
+        ...List.generate(5, (index) {
+          return Icon(
+            Icons.star,
+            size: 16,
+            color: index < promedio.round()
+                ? Colors.amber
+                : Colors.grey.shade300,
+          );
+        }),
+        const SizedBox(width: 4),
+        Text(
+          '${promedio.toStringAsFixed(1)} (${valoraciones.length})',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildValoracionCard(ValoracionModel valoracion) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ...List.generate(5, (index) {
+                  return Icon(
+                    Icons.star,
+                    size: 14,
+                    color: index < valoracion.puntaje
+                        ? Colors.amber
+                        : Colors.grey.shade300,
+                  );
+                }),
+                const Spacer(),
+                Text(
+                  valoracion.autorCorreo,
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              valoracion.comentario,
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarAgregarValoracion(EmprendimientoModel emprendimiento) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AgregarValoracionView(
+          idEmprendimiento: emprendimiento.idEmprendimiento,
+          nombreEmprendimiento: emprendimiento.nombre,
+        ),
+      ),
+    );
+  }
+
+  void _mostrarTodasLasValoraciones(
+    String idEmprendimiento,
+    List<ValoracionModel> valoraciones,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Todas las Valoraciones',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: valoraciones.length,
+                  itemBuilder: (context, index) {
+                    return _buildValoracionCard(valoraciones[index]);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Nuevo método para valoraciones precargadas
+  Widget _buildSeccionValoracionesPrecargadas(
+    List<ValoracionModel> valoraciones,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Valoraciones',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            if (valoraciones.isNotEmpty) _buildPromedioEstrellas(valoraciones),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        if (valoraciones.isEmpty)
+          const Text(
+            'Sin valoraciones aún',
+            style: TextStyle(color: Colors.grey, fontSize: 14),
+          )
+        else
+          ...valoraciones
+              .take(3)
+              .map((valoracion) => _buildValoracionCard(valoracion)),
+
+        if (valoraciones.length > 3)
+          TextButton(
+            onPressed: () =>
+                _mostrarTodasLasValoracionesPrecargadas(valoraciones),
+            child: Text('Ver todas (${valoraciones.length})'),
+          ),
+      ],
+    );
+  }
+
+  // Actualizar el método de mostrar todas las valoraciones
+  void _mostrarTodasLasValoracionesPrecargadas(
+    List<ValoracionModel> valoraciones,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Todas las Valoraciones',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: valoraciones.length,
+                  itemBuilder: (context, index) {
+                    return _buildValoracionCard(valoraciones[index]);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
