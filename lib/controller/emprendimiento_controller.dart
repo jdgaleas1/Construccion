@@ -89,6 +89,7 @@ class EmprendimientoController {
     required String descripcion,
     required double precio,
     required String idEmprendimiento,
+    required String imagenBase64, // aquí recibes la imagen en base64
   }) async {
     try {
       // Mostrar loading
@@ -106,6 +107,7 @@ class EmprendimientoController {
         descripcion: descripcion,
         precio: precio,
         idEmprendimiento: idEmprendimiento,
+        imagenBase64: imagenBase64, // ✅ lo envías al servicio
       );
 
       // Cerrar loading

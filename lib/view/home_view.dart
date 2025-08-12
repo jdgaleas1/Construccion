@@ -6,6 +6,8 @@ import 'package:lata_emprende/services/whatsapp_service.dart';
 import 'package:lata_emprende/controller/valoracion_controller.dart';
 import 'package:lata_emprende/models/valoracion_model.dart';
 import 'package:lata_emprende/view/agregar_valoracion_view.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -179,11 +181,21 @@ class _HomeViewState extends State<HomeView>
                           color: Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.image,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
+                        child: producto.imagenBase64.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.memory(
+                                  base64Decode(producto.imagenBase64),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.image,
+                                size: 60,
+                                color: Colors.grey,
+                              ),
                       ),
 
                       const SizedBox(height: 16),
@@ -326,6 +338,31 @@ class _HomeViewState extends State<HomeView>
         ),
       ),
     );
+  }
+
+  Widget _buildImagenProducto(String base64String) {
+    try {
+      if (base64String.isEmpty) {
+        return const Icon(
+          Icons.image_not_supported,
+          size: 50,
+          color: Colors.grey,
+        );
+      }
+      Uint8List bytes = base64Decode(base64String);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 120, // fijo para que no se deforme
+        ),
+      );
+    } catch (e) {
+      print("Error al decodificar imagen: $e");
+      return const Icon(Icons.broken_image, size: 50, color: Colors.grey);
+    }
   }
 
   Widget _buildErrorWidget() {
@@ -536,7 +573,7 @@ class _HomeViewState extends State<HomeView>
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio:
-                                0.75, // Ajustar para dar más espacio
+                                0.85, // Ajustar para dar más espacio
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
@@ -569,9 +606,8 @@ class _HomeViewState extends State<HomeView>
                                 children: [
                                   // Imagen del producto
                                   Expanded(
-                                    flex: 3,
+                                    flex: 2,
                                     child: Container(
-                                      width: double.infinity,
                                       decoration: BoxDecoration(
                                         color: Colors.grey.shade300,
                                         borderRadius:
@@ -579,10 +615,8 @@ class _HomeViewState extends State<HomeView>
                                               top: Radius.circular(12),
                                             ),
                                       ),
-                                      child: const Icon(
-                                        Icons.image,
-                                        size: 40,
-                                        color: Colors.grey,
+                                      child: _buildImagenProducto(
+                                        producto.imagenBase64,
                                       ),
                                     ),
                                   ),

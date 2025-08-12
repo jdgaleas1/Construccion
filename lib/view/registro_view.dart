@@ -56,28 +56,6 @@ class _RegistroViewState extends State<RegistroView> {
                     : null,
               ),
 
-              DropdownButtonFormField<String>(
-                value: _tipoUsuario,
-                decoration: const InputDecoration(labelText: 'Tipo de usuario'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'consumidor',
-                    child: Text('Consumidor'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'emprendedor',
-                    child: Text('Emprendedor'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _tipoUsuario = value!;
-                  });
-                },
-                validator: (value) =>
-                    value == null ? 'Selecciona un tipo' : null,
-              ),
-
               TextFormField(
                 controller: _correoController,
                 decoration: const InputDecoration(
@@ -165,7 +143,36 @@ class _RegistroViewState extends State<RegistroView> {
               ),
 
               const SizedBox(height: 25),
-
+              SegmentedButton<String>(
+                segments: const <ButtonSegment<String>>[
+                  ButtonSegment<String>(
+                    value: 'consumidor',
+                    label: Text('Consumidor'),
+                    icon: Icon(Icons.person),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'emprendedor',
+                    label: Text('Emprendedor'),
+                    icon: Icon(Icons.store),
+                  ),
+                ],
+                selected: {_tipoUsuario},
+                onSelectionChanged: (Set<String> newSelection) {
+                  setState(() {
+                    _tipoUsuario = newSelection.first;
+                  });
+                },
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.resolveWith<Color?>((
+                    Set<MaterialState> states,
+                  ) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.redAccent.withOpacity(0.2);
+                    }
+                    return null;
+                  }),
+                ),
+              ),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {

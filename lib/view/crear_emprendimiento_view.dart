@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lata_emprende/controller/emprendimiento_controller.dart';
 
 class CrearEmprendimientoView extends StatefulWidget {
@@ -16,6 +19,9 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
   final _ubicacionController = TextEditingController();
   String _categoriaSeleccionada = 'comida';
 
+  File? _logo;
+  String? _logoBase64;
+
   final List<String> _categorias = [
     'comida',
     'ropa',
@@ -24,6 +30,23 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
     'servicios',
     'otros',
   ];
+
+  Future<void> _seleccionarLogo() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _logo = file;
+        _logoBase64 = base64Encode(bytes);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,27 +62,34 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
           key: _formKey,
           child: Column(
             children: [
-              // Logo (placeholder por ahora)
-              Container(
-                height: 120,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
+              GestureDetector(
+                onTap: _seleccionarLogo,
+                child: Container(
+                  height: 120,
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                    image: _logo != null
+                        ? DecorationImage(
+                            image: FileImage(_logo!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _logo == null
+                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
+                      : null,
                 ),
-                child: const Icon(Icons.business, size: 50, color: Colors.grey),
               ),
-
               const SizedBox(height: 10),
-
-              Text(
+              const Text(
                 'Agregar Logo del Emprendimiento',
                 style: TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 30),
 
               TextFormField(
@@ -68,14 +98,10 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                   labelText: 'Nombre del Negocio',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa el nombre del negocio';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Ingresa el nombre del negocio'
+                    : null,
               ),
-
               const SizedBox(height: 20),
 
               TextFormField(
@@ -85,14 +111,10 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 4,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa una descripción';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Ingresa una descripción'
+                    : null,
               ),
-
               const SizedBox(height: 20),
 
               TextFormField(
@@ -101,14 +123,10 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                   labelText: 'Dirección',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa la dirección';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Ingresa la dirección'
+                    : null,
               ),
-
               const SizedBox(height: 20),
 
               DropdownButtonFormField<String>(
@@ -123,13 +141,9 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                     child: Text(categoria.toUpperCase()),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _categoriaSeleccionada = value!;
-                  });
-                },
+                onChanged: (value) =>
+                    setState(() => _categoriaSeleccionada = value!),
               ),
-
               const SizedBox(height: 30),
 
               SizedBox(
@@ -137,6 +151,15 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
+                      if (_logoBase64 == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Selecciona un logo primero'),
+                          ),
+                        );
+                        return;
+                      }
+
                       final controller = EmprendimientoController();
                       controller.crearEmprendimiento(
                         context: context,
@@ -157,15 +180,12 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 15),
 
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.redAccent),
                     padding: const EdgeInsets.symmetric(vertical: 15),

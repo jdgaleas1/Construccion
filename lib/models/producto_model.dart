@@ -3,7 +3,7 @@ class ProductoModel {
   final String nombre;
   final String descripcion;
   final double precio;
-  final String imagen;
+  final String imagenBase64;
   final String idEmprendimiento;
 
   ProductoModel({
@@ -11,18 +11,19 @@ class ProductoModel {
     required this.nombre,
     required this.descripcion,
     required this.precio,
-    required this.imagen,
+    required this.imagenBase64,
     required this.idEmprendimiento,
   });
 
   factory ProductoModel.fromJson(Map<String, dynamic> json, String id) {
     return ProductoModel(
       idProducto: id,
-      nombre: json['nombre'],
-      descripcion: json['descripcion'],
-      precio: (json['precio'] as num).toDouble(),
-      imagen: json['imagen'],
-      idEmprendimiento: json['id_emprendimiento'],
+      nombre: (json['nombre'] ?? '') as String,
+      descripcion: (json['descripcion'] ?? '') as String,
+      precio: (json['precio'] as num?)?.toDouble() ?? 0.0,
+      // ⬇️ fallback a 'imagen' y default '' para no romper
+      imagenBase64: (json['imagenBase64'] ?? json['imagen'] ?? '') as String,
+      idEmprendimiento: (json['id_emprendimiento'] ?? '') as String,
     );
   }
 
@@ -30,7 +31,7 @@ class ProductoModel {
     'nombre': nombre,
     'descripcion': descripcion,
     'precio': precio,
-    'imagen': imagen,
+    'imagenBase64': imagenBase64,
     'id_emprendimiento': idEmprendimiento,
   };
 }

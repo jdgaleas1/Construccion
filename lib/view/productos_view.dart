@@ -5,6 +5,7 @@ import 'package:lata_emprende/models/emprendimiento_model.dart';
 import 'package:lata_emprende/models/producto_model.dart';
 import 'package:lata_emprende/view/crear_emprendimiento_view.dart';
 import 'package:lata_emprende/view/agregar_producto_view.dart';
+import 'dart:convert';
 
 class ProductosView extends StatefulWidget {
   const ProductosView({super.key});
@@ -246,77 +247,93 @@ class _ProductosViewState extends State<ProductosView> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.75,
+                          childAspectRatio:
+                              0.81, // relación equilibrada imagen+texto
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
                     itemCount: _productos.length,
                     itemBuilder: (context, index) {
                       final producto = _productos[index];
-                      return Card(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Imagen placeholder
-                            Expanded(
-                              flex: 3,
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.image,
-                                  size: 40,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
 
-                            // Info del producto
-                            Expanded(
-                              flex: 2,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      producto.nombre,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '\$${producto.precio.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.redAccent,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        IconButton(
-                                          onPressed: () =>
-                                              _confirmarEliminar(producto),
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                            size: 20,
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Imagen con altura fija (no deformada)
+                                SizedBox(
+                                  height: 120,
+                                  width: double.infinity,
+                                  child: producto.imagenBase64.isNotEmpty
+                                      ? Image.memory(
+                                          base64Decode(producto.imagenBase64),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 50,
+                                            color: Colors.grey,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
+                                ),
+
+                                // Contenido textual
+                                Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        producto.nombre,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '\$${producto.precio.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.redAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Botón eliminar flotante
+                            Positioned(
+                              top: 5,
+                              right: 5,
+                              child: InkWell(
+                                onTap: () => _confirmarEliminar(producto),
+                                child: Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.8),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             ),

@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lata_emprende/controller/emprendimiento_controller.dart';
 
 class AgregarProductoView extends StatefulWidget {
@@ -17,6 +20,26 @@ class _AgregarProductoViewState extends State<AgregarProductoView> {
   final _descripcionController = TextEditingController();
   final _precioController = TextEditingController();
 
+  File? _imagenProducto;
+  String? _imagenBase64; // <- aquí guardaremos el Base64
+
+  Future<void> _seleccionarImagen() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _imagenProducto = file;
+        _imagenBase64 = base64Encode(bytes); // <- convertimos a Base64
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,27 +54,42 @@ class _AgregarProductoViewState extends State<AgregarProductoView> {
           key: _formKey,
           child: Column(
             children: [
-              // Imagen del producto (placeholder)
-              Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_alt, size: 50, color: Colors.grey),
-                    SizedBox(height: 10),
-                    Text(
-                      'Subir Imagen del Producto',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+              // Imagen del producto
+              GestureDetector(
+                onTap: _seleccionarImagen,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                    image: _imagenProducto != null
+                        ? DecorationImage(
+                            image: FileImage(_imagenProducto!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _imagenProducto == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Subir Imagen del Producto',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
               ),
 
@@ -97,7 +135,9 @@ class _AgregarProductoViewState extends State<AgregarProductoView> {
                   border: OutlineInputBorder(),
                   prefixText: '\$ ',
                 ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
@@ -120,6 +160,15 @@ class _AgregarProductoViewState extends State<AgregarProductoView> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
+                      if (_imagenBase64 == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Selecciona una imagen primero'),
+                          ),
+                        );
+                        return;
+                      }
+
                       final precio = double.parse(_precioController.text);
                       final controller = EmprendimientoController();
                       controller.crearProducto(
@@ -128,6 +177,7 @@ class _AgregarProductoViewState extends State<AgregarProductoView> {
                         descripcion: _descripcionController.text.trim(),
                         precio: precio,
                         idEmprendimiento: widget.idEmprendimiento,
+                        imagenBase64: _imagenBase64!, // <- enviamos base64
                       );
                     }
                   },

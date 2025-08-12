@@ -217,14 +217,14 @@ class FirestoreService {
     required String descripcion,
     required double precio,
     required String idEmprendimiento,
-    String imagen = '',
+    required String imagenBase64, // ✅ obligatorio
   }) async {
     try {
       final productoData = {
         'nombre': nombre,
         'descripcion': descripcion,
         'precio': precio,
-        'imagen': imagen,
+        'imagenBase64': imagenBase64, // ✅ guardas el Base64
         'id_emprendimiento': idEmprendimiento,
         'fecha_creacion': DateTime.now().toIso8601String(),
       };
