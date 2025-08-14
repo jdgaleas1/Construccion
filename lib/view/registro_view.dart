@@ -23,6 +23,7 @@ class _RegistroViewState extends State<RegistroView> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,6 +144,18 @@ class _RegistroViewState extends State<RegistroView> {
               ),
 
               const SizedBox(height: 25),
+
+              // ✅ NUEVO: Título para el tipo de perfil
+              const Text(
+                'Tipo de perfil',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+
               SegmentedButton<String>(
                 segments: const <ButtonSegment<String>>[
                   ButtonSegment<String>(
@@ -173,6 +186,9 @@ class _RegistroViewState extends State<RegistroView> {
                   }),
                 ),
               ),
+
+              const SizedBox(height: 25),
+
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
@@ -195,7 +211,10 @@ class _RegistroViewState extends State<RegistroView> {
                     vertical: 14,
                   ),
                 ),
-                child: const Text('Registrar Cuenta'),
+                child: const Text(
+                  'Registrar Cuenta',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
 
               const SizedBox(height: 16),

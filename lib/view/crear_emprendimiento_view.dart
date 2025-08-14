@@ -19,9 +19,6 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
   final _ubicacionController = TextEditingController();
   String _categoriaSeleccionada = 'comida';
 
-  File? _logo;
-  String? _logoBase64;
-
   final List<String> _categorias = [
     'comida',
     'ropa',
@@ -30,23 +27,6 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
     'servicios',
     'otros',
   ];
-
-  Future<void> _seleccionarLogo() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _logo = file;
-        _logoBase64 = base64Encode(bytes);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,34 +42,42 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
           key: _formKey,
           child: Column(
             children: [
-              GestureDetector(
-                onTap: _seleccionarLogo,
-                child: Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                    image: _logo != null
-                        ? DecorationImage(
-                            image: FileImage(_logo!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+              // ✅ Logo estático de la app
+              Container(
+                height: 120,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.redAccent.withOpacity(0.3),
+                    width: 2,
                   ),
-                  child: _logo == null
-                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
-                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(13),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback si no encuentra el logo
+                      return const Icon(
+                        Icons.business,
+                        size: 60,
+                        color: Colors.redAccent,
+                      );
+                    },
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Agregar Logo del Emprendimiento',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+
               const SizedBox(height: 30),
 
               TextFormField(
@@ -97,7 +85,9 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                 decoration: const InputDecoration(
                   labelText: 'Nombre del Negocio',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.business),
                 ),
+                textCapitalization: TextCapitalization.words,
                 validator: (value) => value == null || value.isEmpty
                     ? 'Ingresa el nombre del negocio'
                     : null,
@@ -109,8 +99,11 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                 decoration: const InputDecoration(
                   labelText: 'Descripción del Negocio',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
+                  alignLabelWithHint: true,
                 ),
                 maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
                 validator: (value) => value == null || value.isEmpty
                     ? 'Ingresa una descripción'
                     : null,
@@ -122,7 +115,9 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                 decoration: const InputDecoration(
                   labelText: 'Dirección',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on),
                 ),
+                textCapitalization: TextCapitalization.words,
                 validator: (value) => value == null || value.isEmpty
                     ? 'Ingresa la dirección'
                     : null,
@@ -134,11 +129,21 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                 decoration: const InputDecoration(
                   labelText: 'Categoría',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
                 items: _categorias.map((categoria) {
                   return DropdownMenuItem(
                     value: categoria,
-                    child: Text(categoria.toUpperCase()),
+                    child: Row(
+                      children: [
+                        _getCategoriaIcon(categoria),
+                        const SizedBox(width: 10),
+                        Text(
+                          _getCategoriaLabel(categoria),
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) =>
@@ -148,18 +153,9 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
 
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      if (_logoBase64 == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Selecciona un logo primero'),
-                          ),
-                        );
-                        return;
-                      }
-
                       final controller = EmprendimientoController();
                       controller.crearEmprendimiento(
                         context: context,
@@ -170,13 +166,17 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
                       );
                     }
                   },
+                  icon: const Icon(Icons.save, color: Colors.white),
+                  label: const Text(
+                    'Crear Emprendimiento',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  child: const Text(
-                    'Guardar Perfil',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -184,15 +184,19 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
 
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.cancel, color: Colors.redAccent),
+                  label: const Text(
+                    'Cancelar',
+                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.redAccent),
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -201,6 +205,46 @@ class _CrearEmprendimientoViewState extends State<CrearEmprendimientoView> {
         ),
       ),
     );
+  }
+
+  // Helper para obtener iconos de categorías
+  Icon _getCategoriaIcon(String categoria) {
+    switch (categoria) {
+      case 'comida':
+        return const Icon(Icons.restaurant, color: Colors.orange);
+      case 'ropa':
+        return const Icon(Icons.checkroom, color: Colors.purple);
+      case 'artesania':
+        return const Icon(Icons.palette, color: Colors.brown);
+      case 'tecnologia':
+        return const Icon(Icons.computer, color: Colors.blue);
+      case 'servicios':
+        return const Icon(Icons.build, color: Colors.green);
+      case 'otros':
+        return const Icon(Icons.more_horiz, color: Colors.grey);
+      default:
+        return const Icon(Icons.category, color: Colors.grey);
+    }
+  }
+
+  // Helper para obtener labels formateados de categorías
+  String _getCategoriaLabel(String categoria) {
+    switch (categoria) {
+      case 'comida':
+        return 'Comida';
+      case 'ropa':
+        return 'Ropa';
+      case 'artesania':
+        return 'Artesanía';
+      case 'tecnologia':
+        return 'Tecnología';
+      case 'servicios':
+        return 'Servicios';
+      case 'otros':
+        return 'Otros';
+      default:
+        return categoria.toUpperCase();
+    }
   }
 
   @override

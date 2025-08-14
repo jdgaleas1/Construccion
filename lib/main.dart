@@ -56,11 +56,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
   ];
 
   // Títulos para cada página
-  final List<String> _titles = [
-    'Latacunga Emprende',
-    'Mis Productos',
-    'Mi Perfil',
-  ];
+  final List<String> _titles = ['UniEmprende', 'Mis Productos', 'Mi Perfil'];
 
   @override
   Widget build(BuildContext context) {
